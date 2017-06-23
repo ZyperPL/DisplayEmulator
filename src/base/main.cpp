@@ -8,7 +8,7 @@
 void printHelp(int argc, char *argv[])
 {
   argc=argc; // prevent warning
-  printf("Usage:\n%s\t <program_path>\n", argv[0]);
+  printf("Usage:\n%s\t ./<program_path>\n", argv[0]);
 }
 
 int main(int argc, char *argv[])
