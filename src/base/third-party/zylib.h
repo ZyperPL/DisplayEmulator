@@ -27,7 +27,7 @@ zPixel zRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a);
 /*
  * window
  */
-struct Zwindow
+typedef struct
 {
   uint32_t width;
   uint32_t height;
@@ -35,10 +35,12 @@ struct Zwindow
   const char *name;
 
   uint8_t *buffer;
-};
+} Zwindow_t;
 
+Zwindow_t *zCreateWindow(uint32_t w, uint32_t h, const char *name);
 
-struct Zwindow zCreateWindow(uint32_t w, uint32_t h, const char *name);
+void zSetWindow(Zwindow_t *wnd);
+Zwindow_t *zGetWindow();
 
 bool zIsOpen();
 void zClear(zPixel c);

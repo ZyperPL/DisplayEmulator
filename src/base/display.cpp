@@ -2,7 +2,7 @@
 
 Display::Display(int16_t w, int16_t h) : Adafruit_GFX (w, h)
 {
-  zCreateWindow(w, h, WINDOW_NAME);
+  zSetWindow(zCreateWindow(w, h, WINDOW_NAME));
   setTextColor(1);
 }
 

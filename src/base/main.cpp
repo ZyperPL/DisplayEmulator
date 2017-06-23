@@ -1,8 +1,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <string>
+#include <dlfcn.h>
 
-#include "display.h"
+#include "zylib.h"
 
 void printHelp(int argc, char *argv[])
 {
@@ -18,42 +19,40 @@ int main(int argc, char *argv[])
     return 1;
   }
 
-  int16_t w = 128;
-  int16_t h = 64;
+  // load external library (user main)
+  void* handle = dlopen(argv[1], RTLD_LAZY);
 
-  // initialize screen
-  Display *display = new Display(w, h);
+  if (!handle)
+  {
+    fprintf(stderr, "Cannot load '%s'!\n", argv[1]);
+    fprintf(stderr, "Error: %s\n", dlerror());
+    printHelp(argc, argv);
+    return 2;
+  }
+
+  void (*init)();
+  void (*update)();
+
+  init   = (void(*)())dlsym(handle, "init");
+  if (!init) fprintf(stderr, "%s\n", dlerror());  
+  update = (void(*)())dlsym(handle, "update");  
+  if (!update) fprintf(stderr, "%s\n", dlerror());
+
+  init();
+
+  Zwindow_t* (*getWnd)() = (Zwindow_t*(*)())(dlsym(handle, "getWindow"));
+  zSetWindow(getWnd());  
 
   while (zIsOpen())
   {
-
-	display->clearDisplay();
-	display->setTextColor(WHITE);
-
-  // demo
-  display->setTextSize(1);
-  display->setCursor(0, 0);
-  display->print("22.06.2017 12:30:14");
-  const int STAGE_DOT_SIZE = 2;
-  const int STAGE_DOT_SPACING = 4;
-  int stage = 2;
-  for (int i = 0; i < 6; i++) {
-    display->drawCircle(display->width()/2 - 
-        (6 * STAGE_DOT_SIZE * STAGE_DOT_SPACING)/2 + STAGE_DOT_SPACING + 
-        (i * STAGE_DOT_SIZE * STAGE_DOT_SPACING),
-                       display->height() - STAGE_DOT_SIZE - 1, 
-                       STAGE_DOT_SIZE, 1);
-  }
-  display->fillCircle(display->width()/2 - 
-      (6 * STAGE_DOT_SIZE * STAGE_DOT_SPACING)/2 + STAGE_DOT_SPACING + 
-      (stage * STAGE_DOT_SIZE * STAGE_DOT_SPACING),
-                     display->height() - STAGE_DOT_SIZE - 1, 
-                     STAGE_DOT_SIZE, 1);
-
-
     zClear();
+
+    update();
+    
     zUpdate();
   }
+
+  dlclose(handle);
 
   zFree();
 

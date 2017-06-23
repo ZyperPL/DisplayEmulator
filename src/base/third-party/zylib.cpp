@@ -1,6 +1,6 @@
 #include "zylib.h"
 
-struct Zwindow Zwindow;
+Zwindow_t *Zwindow = NULL;
 
 // shaders
 const GLchar* vertexSource = R"glsl(
@@ -35,7 +35,7 @@ zPixel zRGBA(uint8_t r, uint8_t g, uint8_t b, uint8_t a)
   return { r, g, b, a };
 }
 
-struct Zwindow zCreateWindow(uint32_t w, uint32_t h, const char *name)
+Zwindow_t *zCreateWindow(uint32_t w, uint32_t h, const char *name)
 {
   glfwInit();
 
@@ -44,11 +44,12 @@ struct Zwindow zCreateWindow(uint32_t w, uint32_t h, const char *name)
   glfwWindowHint (GLFW_OPENGL_FORWARD_COMPAT, GL_TRUE);  
 
   // initialize Zwindow
-  Zwindow.width = w;
-  Zwindow.height = h;
-  Zwindow.aspect = (double)(w)/(double)(h);
-  Zwindow.name = name;
-  Zwindow.buffer = new uint8_t[w*h*COMPONENTS];
+  Zwindow = new Zwindow_t();
+  Zwindow->width = w;
+  Zwindow->height = h;
+  Zwindow->aspect = (double)(w)/(double)(h);
+  Zwindow->name = name;
+  Zwindow->buffer = new uint8_t[w*h*COMPONENTS];
 
   // create window
   GLFWwindow *wnd = glfwCreateWindow(w, h, name, NULL, NULL);
@@ -115,9 +116,9 @@ struct Zwindow zCreateWindow(uint32_t w, uint32_t h, const char *name)
   glGenTextures(1, &tex);
   glBindTexture(GL_TEXTURE_2D, tex);
 
-  memset(&Zwindow.buffer[0], 0, w*h*COMPONENTS);
+  memset(&Zwindow->buffer[0], 0, w*h*COMPONENTS);
   glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, w, h, 0, 
-               GL_RGB, GL_UNSIGNED_BYTE, &Zwindow.buffer[0]);
+               GL_RGB, GL_UNSIGNED_BYTE, &Zwindow->buffer[0]);
     
   glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
@@ -126,6 +127,16 @@ struct Zwindow zCreateWindow(uint32_t w, uint32_t h, const char *name)
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
   glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 
+  return Zwindow;
+}
+
+void zSetWindow(Zwindow_t *wnd)
+{
+  Zwindow = wnd;
+}
+
+Zwindow_t *zGetWindow()
+{
   return Zwindow;
 }
 
@@ -144,7 +155,7 @@ void zClear(zPixel c)
 
 void zClear()
 {
-  memset(&Zwindow.buffer[0], 0, Zwindow.width*Zwindow.height*COMPONENTS);
+  if (Zwindow) memset(&Zwindow->buffer[0], 0, Zwindow->width*Zwindow->height*COMPONENTS);
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 }
 
@@ -152,11 +163,12 @@ void zUpdate()
 {
   int width, height;
   glfwGetWindowSize(glfwGetCurrentContext(), &width, &height);
-  double r = double(width)/double(Zwindow.width);
-  double r2 = double(height)/double(Zwindow.height);
+
+  double r = double(width)/double(Zwindow->width);
+  double r2 = double(height)/double(Zwindow->height);
   if (r > r2) r = r2;
-  int w = int(r*Zwindow.width);
-  int h = int(r*Zwindow.height);
+  int w = int(r*Zwindow->width);
+  int h = int(r*Zwindow->height);
   glViewport((width-w)/2, (height-h)/2, w, h);
 
   glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -167,13 +179,13 @@ void zUpdate()
 
 void zDrawPixel(uint16_t x, uint16_t y, zPixel c)
 {
-  Zwindow.buffer[y*Zwindow.width + x + 0] = c.r;
-  Zwindow.buffer[y*Zwindow.width + x + 1] = c.g;
-  Zwindow.buffer[y*Zwindow.width + x + 2] = c.b;  
+  Zwindow->buffer[y*Zwindow->width + x + 0] = c.r;
+  Zwindow->buffer[y*Zwindow->width + x + 1] = c.g;
+  Zwindow->buffer[y*Zwindow->width + x + 2] = c.b;  
 
   // update texture
-  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, Zwindow.width, Zwindow.height, 0, 
-               GL_RGB, GL_UNSIGNED_BYTE, &Zwindow.buffer[0]);  
+  glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB8, Zwindow->width, Zwindow->height, 0, 
+               GL_RGB, GL_UNSIGNED_BYTE, &Zwindow->buffer[0]);  
 }
 
 void zFree()
